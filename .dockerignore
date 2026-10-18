@@ -8,3 +8,4 @@
 LICENSE
 requirements-dev.txt
 pyproject.toml
+.venv
