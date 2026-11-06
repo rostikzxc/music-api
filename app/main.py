@@ -3,10 +3,13 @@ from fastapi.responses import JSONResponse
 
 from app.core.exceptions import InvalidCredentials, InvalidToken, UserDeactivated, UsernameTaken
 from app.routers.auth import router as auth_router
+from app.routers.users import router as users_router
 
 app = FastAPI(title="Music API")
 
 app.include_router(auth_router)
+
+app.include_router(users_router)
 
 
 @app.get("/health")
