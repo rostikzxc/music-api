@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.core.exceptions import InvalidCredentials, UserDeactivated, UsernameTaken
+from app.core.exceptions import InvalidCredentials, InvalidToken, UserDeactivated, UsernameTaken
 from app.routers.auth import router as auth_router
 
 app = FastAPI(title="Music API")
@@ -31,3 +31,12 @@ async def invalid_creadentials_handler(reuqest: Request, exc: InvalidCredentials
 @app.exception_handler(UserDeactivated)
 async def user_deactivated_handler(request: Request, exc: UserDeactivated) -> JSONResponse:
     return JSONResponse(status_code=403, content={"detail": "User deactivated"})
+
+
+@app.exception_handler(InvalidToken)
+async def invalid_token_handler(request: Request, exc: InvalidToken) -> JSONResponse:
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "Could not validate credentials"},
+        headers={"WWW-Authenticate": "Bearer"},
+    )

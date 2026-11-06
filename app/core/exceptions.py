@@ -12,3 +12,7 @@ class InvalidCredentials(MusicError):
 
 class UserDeactivated(MusicError):
     pass
+
+
+class InvalidToken(MusicError):
+    pass

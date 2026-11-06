@@ -4,6 +4,7 @@ import jwt
 from pwdlib import PasswordHash
 
 from app.core.config import settings
+from app.core.exceptions import InvalidToken
 
 ALGORITHM = "HS256"
 
@@ -26,3 +27,15 @@ def create_access_token(user_id: int) -> str:
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
 
     return token
+
+
+def decode_access_token(token: str) -> int:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+
+    except jwt.InvalidTokenError as e:
+        raise InvalidToken from e
+
+    user_id = int(payload["sub"])
+
+    return user_id

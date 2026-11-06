@@ -14,6 +14,12 @@ class UserRepository:
 
         return result
 
+    async def get_by_id(self, user_id: int) -> User | None:
+        stmt = select(User).where(User.id == user_id)
+        result = await self.session.scalar(stmt)
+
+        return result
+
     async def add(self, user: User) -> User:
         self.session.add(user)
         await self.session.flush()
