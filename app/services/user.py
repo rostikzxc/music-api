@@ -1,12 +1,23 @@
 import asyncio
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import InvalidCredentials, InvalidToken, UserDeactivated, UsernameTaken
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    generate_refresh_token,
+    hash_password,
+    hash_token,
+    verify_password,
+)
+from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.repositories.refresh_token import TokenRepository
 from app.repositories.user import UserRepository
+from app.schemas.auth import Token
 from app.schemas.user import UserRegister
 
 
@@ -14,6 +25,7 @@ class UserService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.user_repo = UserRepository(session)
+        self.token_repo = TokenRepository(session)
 
     async def register(self, data: UserRegister) -> User:
         username = data.username.lower()
@@ -36,7 +48,7 @@ class UserService:
 
         return user
 
-    async def login(self, username: str, password: str) -> str:
+    async def login(self, username: str, password: str) -> Token:
         username = username.lower()
 
         user = await self.user_repo.get_by_username(username)
@@ -51,8 +63,19 @@ class UserService:
             raise UserDeactivated
 
         access_token = create_access_token(user.id)
+        refresh_token = generate_refresh_token()
+        hash_refresh_token = hash_token(refresh_token)
 
-        return access_token
+        token = RefreshToken(
+            user_id=user.id,
+            token_hash=hash_refresh_token,
+            expires_at=datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+
+        await self.token_repo.add(token)
+        await self.session.commit()
+
+        return Token(access_token=access_token, refresh_token=refresh_token)
 
     async def get_active_user(self, user_id: int) -> User:
 
