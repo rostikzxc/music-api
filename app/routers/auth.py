@@ -8,7 +8,7 @@ from app.dependencies.db import get_session
 from app.models.user import User
 from app.schemas.auth import Token
 from app.schemas.user import UserRegister, UserResponse
-from app.services.user import UserService
+from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def register(
     data: UserRegister, session: Annotated[AsyncSession, Depends(get_session)]
 ) -> User:
-    service = UserService(session)
+    service = AuthService(session)
 
     return await service.register(data)
 
@@ -27,6 +27,6 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Token:
-    service = UserService(session)
+    service = AuthService(session)
 
     return await service.login(form_data.username, form_data.password)
