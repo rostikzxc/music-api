@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.exceptions import InvalidCredentials, UserDeactivated, UsernameTaken
+from app.core.exceptions import InvalidCredentials, InvalidToken, UserDeactivated, UsernameTaken
 from app.core.security import (
     create_access_token,
     generate_refresh_token,
@@ -76,3 +76,41 @@ class AuthService:
         await self.session.commit()
 
         return Token(access_token=access_token, refresh_token=refresh_token)
+
+    async def refresh(self, raw_token: str) -> Token:
+        hash_refresh_token = hash_token(raw_token)
+        row = await self.token_repo.get_by_token_hash(hash_refresh_token)
+
+        if row is None:
+            raise InvalidToken
+
+        if row.revoked_at is not None:
+            await self.token_repo.revoke_tokens(row.user_id)
+            await self.session.commit()
+
+            raise InvalidToken
+
+        if row.expires_at < datetime.now(UTC):
+            raise InvalidToken
+
+        user = await self.user_repo.get_by_id(row.user_id)
+
+        if not user.is_active:
+            raise UserDeactivated
+
+        row.revoked_at = datetime.now(UTC)
+
+        new_refresh_token = generate_refresh_token()
+        hash_new_refresh_token = hash_token(new_refresh_token)
+        access_token = create_access_token(row.user_id)
+
+        token = RefreshToken(
+            user_id=user.id,
+            token_hash=hash_new_refresh_token,
+            expires_at=datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+
+        await self.token_repo.add(token)
+        await self.session.commit()
+
+        return Token(access_token=access_token, refresh_token=new_refresh_token)
