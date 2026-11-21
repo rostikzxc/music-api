@@ -23,7 +23,7 @@ async def username_taken_handler(request: Request, exc: UsernameTaken) -> JSONRe
 
 
 @app.exception_handler(InvalidCredentials)
-async def invalid_creadentials_handler(reuqest: Request, exc: InvalidCredentials) -> JSONResponse:
+async def invalid_credentials_handler(request: Request, exc: InvalidCredentials) -> JSONResponse:
     return JSONResponse(
         status_code=401,
         content={"detail": "Invalid username or password"},
