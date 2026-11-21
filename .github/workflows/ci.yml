@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: music
+      POSTGRES_PASSWORD: change_me
+      POSTGRES_DB: music
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      SECRET_KEY: change_me
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+      
+      - name: Install dev requirements
+        run: pip install -r requirements-dev.txt
+      
+      - name: Ruff check
+        run: ruff check .
+
+      - name: Ruff format
+        run: ruff format --check .
+
+      - name: Mypy
+        run: mypy .
+
+      - name: Pytest
+        run: pytest -v 
+          
+
+
+
