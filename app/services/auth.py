@@ -114,3 +114,17 @@ class AuthService:
         await self.session.commit()
 
         return Token(access_token=access_token, refresh_token=new_refresh_token)
+
+    async def logout(self, raw_token: str) -> None:
+        hash_refresh_token = hash_token(raw_token)
+        row = await self.token_repo.get_by_token_hash(hash_refresh_token)
+
+        if row is None:
+            raise InvalidToken
+
+        if row.revoked_at is not None:
+            return
+
+        row.revoked_at = datetime.now(UTC)
+
+        await self.session.commit()

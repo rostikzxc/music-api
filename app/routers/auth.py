@@ -40,3 +40,13 @@ async def refresh(
     service = AuthService(session)
 
     return await service.refresh(data.refresh_token)
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    data: RefreshTokenRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    service = AuthService(session)
+
+    await service.logout(data.refresh_token)
