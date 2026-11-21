@@ -95,6 +95,9 @@ class AuthService:
 
         user = await self.user_repo.get_by_id(row.user_id)
 
+        if user is None:
+            raise InvalidToken
+
         if not user.is_active:
             raise UserDeactivated
 
