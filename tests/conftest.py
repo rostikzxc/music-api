@@ -11,6 +11,9 @@ from app.core.database import Base
 from app.dependencies.db import get_session
 from app.main import app
 
+TEST_USERNAME = "test_user"
+TEST_PASSWORD = "test-password-123"
+
 t_settings = settings.model_copy(update={"POSTGRES_DB": "music_test", "POSTGRES_HOST": "localhost"})
 
 t_engine = create_async_engine(t_settings.database_url, poolclass=NullPool)
@@ -43,3 +46,18 @@ async def clean_db() -> AsyncGenerator[None]:
 
     async with t_engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+
+
+@pytest_asyncio.fixture
+async def registered_user(client: AsyncClient) -> dict[str, str]:
+    response = await client.post(
+        "/auth/register",
+        json={
+            "username": TEST_USERNAME,
+            "password": TEST_PASSWORD,
+        },
+    )
+
+    assert response.status_code == 201, response.text
+
+    return {"username": TEST_USERNAME, "password": TEST_PASSWORD}
