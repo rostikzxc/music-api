@@ -10,7 +10,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     user: "1000:1000"
     volumes:
       - .:/app
@@ -32,6 +32,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    ports:
+      - "127.0.0.1:5432:5432"
     env_file:
       - .env
     volumes:
@@ -39,3 +41,4 @@ services:
 
 volumes:
   postgres_data:
+
