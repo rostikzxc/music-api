@@ -5,9 +5,27 @@ on:
     branches: [main]
   pull_request:
 
+
 jobs:
   checks:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: music
+          POSTGRES_PASSWORD: change_me
+          POSTGRES_DB: music_test
+
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U music -d music_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+          --health-start-period 10s
+
     env:
       POSTGRES_USER: music
       POSTGRES_PASSWORD: change_me
