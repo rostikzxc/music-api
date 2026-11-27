@@ -88,7 +88,13 @@ async def test_login_invalid_credentials(
 @pytest.mark.asyncio
 async def test_refresh_success(client: AsyncClient, tokens: dict[str, str]) -> None:
 
-    response = await client.post("/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    first = await client.post("/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+
+    assert first.status_code == 200, first.text
+
+    response = await client.post(
+        "/auth/refresh", json={"refresh_token": first.json()["refresh_token"]}
+    )
 
     data = response.json()
 
@@ -104,3 +110,40 @@ async def test_refresh_unknown_token(client: AsyncClient) -> None:
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Could not validate credentials"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_rotation(client: AsyncClient, tokens: dict[str, str]) -> None:
+    old_token = tokens["refresh_token"]
+
+    response = await client.post("/auth/refresh", json={"refresh_token": old_token})
+
+    assert response.status_code == 200, response.text
+
+    reuse = await client.post("/auth/refresh", json={"refresh_token": old_token})
+
+    assert reuse.status_code == 401
+    assert reuse.json() == {"detail": "Could not validate credentials"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_reuse_detection(client: AsyncClient, tokens: dict[str, str]) -> None:
+    old_token = tokens["refresh_token"]
+
+    response = await client.post("/auth/refresh", json={"refresh_token": old_token})
+
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+
+    reuse_old_token = await client.post("/auth/refresh", json={"refresh_token": old_token})
+
+    assert reuse_old_token.status_code == 401
+    assert reuse_old_token.json() == {"detail": "Could not validate credentials"}
+
+    use_new_token = await client.post(
+        "/auth/refresh", json={"refresh_token": data["refresh_token"]}
+    )
+
+    assert use_new_token.status_code == 401
+    assert use_new_token.json() == {"detail": "Could not validate credentials"}
