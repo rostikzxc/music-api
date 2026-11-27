@@ -83,3 +83,24 @@ async def test_login_invalid_credentials(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Invalid username or password"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_success(client: AsyncClient, tokens: dict[str, str]) -> None:
+
+    response = await client.post("/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert tokens["refresh_token"] != data["refresh_token"]
+    assert data == {"access_token": ANY, "refresh_token": ANY, "token_type": "bearer"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_unknown_token(client: AsyncClient) -> None:
+
+    response = await client.post("/auth/refresh", json={"refresh_token": "unknown-token"})
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Could not validate credentials"}
