@@ -61,3 +61,20 @@ async def registered_user(client: AsyncClient) -> dict[str, str]:
     assert response.status_code == 201, response.text
 
     return {"username": TEST_USERNAME, "password": TEST_PASSWORD}
+
+
+@pytest_asyncio.fixture
+async def tokens(client: AsyncClient, registered_user: dict[str, str]) -> dict[str, str]:
+    response = await client.post(
+        "/auth/login",
+        data=registered_user,
+    )
+
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+
+    return {
+        "access_token": data["access_token"],
+        "refresh_token": data["refresh_token"],
+    }
